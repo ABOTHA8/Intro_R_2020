@@ -14,8 +14,8 @@ glimpse(laminaria)
 
 laminaria %>%
   group_by(site) %>%
-  summarise(max_stipe_mass=max(stipe_mass))
-summarise(min(blade_length))
+  summarise(max_stipe_mass=max(stipe_mass), min_blade_length= min(blade_length))
+
 
 
 # Very neat scripts
