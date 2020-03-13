@@ -1,0 +1,262 @@
+---
+output:
+  word_document: default
+  always_allow_html: true
+  pdf_document: default
+  html_document: 
+    keep_md: yes
+---
+---
+#Is COVID-19 the new Flu?  {-}
+
+**Aamirah Botha 3440074** 
+
+******************
+
+---
+#**Introduction**
+
+
+Humanity has been through many pandemics over our thousands of years of occupying the earth. The latest pandemic to hit is the recent COVID-19 virus which is has managed to spread to over 87 countries worldwide (Laud, 2020).  The COVID-19 forms part of a large family of viruses that are responsible for a variety of illnesses such as the common cold to Severe Acute Respiratory Syndrome (SARS). The COVID-19 has recently showed up as a new strain and is currently affecting over 95 000 people in the world (Laud, 2020). Founded in Mainland China, Wuhan. The virus was quickly researched by medical researchers and found to be a novel bat borne corona virus that causes severe and fatal respiratory disease in humans(Ren et al., 2020). 
+
+
+HIV AIDS is one of the biggest pandemics to be faced in recent years with it’s first report being in 1981 and growing to a proportion of over 65 million infections and 25 million deaths today(WHO,2016. The HIV virus killed over 2.6million people in 2005 alone ("Global HIV & AIDS statistics — 2019 fact sheet",2006). As with COVID-19, HIV is also a zoonotic virus which indicates that both viruses originate from wildlife and get passed onto humans. These viruses can have a serious threat on human and animal health and it is thus important for constant comparative studies to take place in order to improve our understanding of the viruses and how we can better manage them. Comparative studies can also give us insight into the evolution of mammalian immune systems (Bean et al., 2013). 
+
+With very limited data on the COVID-19 and years of data on HIV, the data becomes challenging to really compare and get realistic analysis results. It is however, useful to look at which countries are being affected and the number of cases that are showing up especially with the COVID-19 spreading toover 87 countries in a matter of three months.
+
+
+The aim of this study is to compare the current COVID-19 pandemic cases per significant country to that of an ongoing pandemic, HIV.  
+
+
+
+#**Methods and Materials**
+
+
+The COVID-19 data was obtained from GIT-Hub at the following link: https://github.com/CSSEGISandData/COVID-19 where the data was extracted as a CSV (Comma Separated Values) file. The data was updated regularly as the virus spread since December 2019. The HIV dataset was extracted from the World Health Organisation online database from the University of Oxford in a CSV format as well at the following link https://ourworldindata.org/hiv-aids. Both datasets were tidied using TidyR packages in Rstudio. The focus was on statistical comparisons between deaths, new cases and rehabilitation in both viruses. In this case, because HIV is an incurable disease the focus was based around people living with HIV instead of rehabilitation. Living with HIV could be viewed as a rehabilitation process as there are many steps and changes that need to be made to ones’ life in order to live comfortably with the virus.  
+
+
+**Below is the steps and code used to tidy and formulate our data into graphical representations.**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE, include=FALSE}
+#Loading libraries
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+library(readr)
+library(scales)
+library(ggsn)
+library(maps)
+library(ggplot2)
+library(plotly)
+
+#Loading data
+deaths_and_new_cases_of_hiv <- read_csv("data/deaths-and-new-cases-of-hiv.csv")
+ 
+Corona_virus_data_recovered <- read_csv("data/time_series_19-covid-Recovered.csv")
+Corona_virus_data_deaths <- read_csv("data/time_series_19-covid-Deaths.csv")
+Corona_virus_data_confirmed <- read_csv("data/time_series_19-covid-Confirmed.csv")
+
+
+#Tidying HIV Data
+
+HIV<- deaths_and_new_cases_of_hiv %>%
+  rename(Country= Entity, New_Infections=c(5), Deaths=c(4), Living_with_HIV= c(6)) %>%
+  select(-c(2))
+
+
+#Tidying Corona virus Data
+Corona_virus_recovered<-Corona_virus_data_recovered %>%
+  gather(c(5:51), key = "Date", value = "Recovered") %>%
+  separate(col = Date, into = c("date", "time"), sep = " ")
+
+
+Corona_virus_confirmed<-Corona_virus_data_confirmed %>%
+  gather(c(5:51), key = "Date", value = "Confirmed")%>%
+  separate(col = Date, into = c("date", "time"), sep = " ")
+
+Corona_virus_deaths<-Corona_virus_data_deaths %>%
+  gather(c(5:51), key = "Date", value = "Deaths")%>%
+  separate(col = Date, into = c("date", "time"), sep = " ")
+```
+
+A global map was created to show the extent of the spread of the COVID-19 and processed through plotly to create an interactve map.
+
+```
+
+# Mapping
+Map_1<- ggplot() +
+  borders() + # The global shape file
+  coord_equal()+# Equal sizing for lon/lat
+  labs(title="Spread of COVID-19")+ 
+  theme_bw()+
+  borders(fill = "white", colour = "black")+
+  geom_point(data=Corona_virus_confirmed, aes(x=Long, y=Lat), color="red")+
+  scalebar(x.min = 22, x.max = 26, y.min = -36, y.max = -35, # Set location of bar
+           dist = 200, height = 1, st.dist = 0.8, st.size = 4, # Set particulars
+           transform = TRUE, model = "WGS84") + # Set appearance
+           north(x.min = -150, x.max = -100, y.min = -70, y.max = -60, # Set location of symbol
+                 scale = 30, symbol = 16)
+Map_1
+
+```
+```{r figs1 , echo=FALSE,fig.cap="Figure 1. A global representation of the spread of the COVID-19"}
+
+library(plotly)
+Map_1<- ggplot() +
+  borders() + # The global shape file
+  coord_equal()+# Equal sizing for lon/lat
+  labs(title="Spread of COVID-19")+ 
+  theme_bw()+
+  borders(fill = "white", colour = "black")+
+  geom_point(data= Corona_virus_data_confirmed, aes(x=Long, y=Lat), color="red")
+
+  Map_1<- ggplotly(Map_1)
+Map_1
+```
+
+The datasets were then summarised and grouped by country and mean values to get comparable data. The COVID-19 data was then joined to create one overall dataset. 
+
+```{r echo=FALSE,include=FALSE}
+#Summarise datasets
+
+  summary(HIV)
+HIV_1 <- HIV %>%
+  group_by(Country) %>%  
+ summarise(mean_deaths= mean(Deaths), mean_new_infections= mean(New_Infections), mean_Living_with_HIV = mean(Living_with_HIV) )
+
+Corona_1 <- Corona_virus_confirmed %>% 
+  group_by(`Country/Region`) %>% 
+  summarise(mean_confirmed = mean(Confirmed))
+
+Corona_2 <- Corona_virus_recovered %>% 
+  group_by(`Country/Region`) %>% 
+  summarise(mean_recovered = mean(Recovered))
+
+Corona_3 <- Corona_virus_deaths %>% 
+  group_by(`Country/Region`) %>% 
+  summarise(mean_deaths = mean(Deaths))
+
+Corona_tidy <- left_join(Corona_1, Corona_2)
+Corona_tidy2 <- left_join(Corona_tidy, Corona_3)
+
+Corona_tidy2<- Corona_tidy2 %>% 
+rename( "Country"= "Country/Region")
+```
+
+The datasets were then modified to highlight the significant data such as the countires with the highest mean of deaths. This was done using the filter() function with the aim of filtering out between 3-4 countries to allow for geographical representations to be more significant for analyisis.
+
+```{r echo=FALSE, include=FALSE}
+#Create dataset for significant countries
+Corona_sig <- Corona_tidy2 %>% 
+ filter(mean_deaths > 3)
+
+HIV_sig<- HIV_1 %>% 
+  filter(mean_deaths > 300000)
+```
+
+
+#**Results**
+
+
+Mainland China has the highest average deaths,confirmed cases and recovered cases. The second highest is South Korea in confirmed cases, however Italy has the second highest average deaths to date while Iran has the second highest recovered average (Figure 1)
+
+```{r echo=FALSE, include=FALSE}
+#Bar graphs
+Corona_Confirmed_graph <- ggplot(data = Corona_sig, aes(x = Country, y = mean_confirmed))+
+  geom_bar(stat =  "identity", aes(fill=mean_confirmed))+
+  labs(x="Country", y="Mean confirmed")
+Corona_Confirmed_graph
+
+Corona_Deaths_graph <- ggplot(data = Corona_sig, aes(x = Country, y = mean_deaths))+
+  geom_bar(stat =  "identity", aes(fill=mean_deaths))+
+  labs(x="Country", y="Mean Deaths")
+Corona_Deaths_graph
+
+Corona_Recovered_graph <- ggplot(data = Corona_sig, aes(x = Country, y = mean_recovered))+
+  geom_bar(stat =  "identity", aes(fill=mean_recovered))+
+  labs(x="Country", y="Mean recovered")
+Corona_Recovered_graph 
+```
+```{r figs2 , echo=FALSE, fig.cap="Figure 2. A bar graph showcasing the confirmed cases, deaths and recoveries in the four top countries currently affected by COVID-19"}
+Corona_bar_graphs<- ggarrange(Corona_Confirmed_graph, Corona_Deaths_graph, Corona_Recovered_graph, 
+          ncol = 2, nrow = 2, # Set number of rows and columns
+          labels = c("A", "B", "C"), # Label each figure
+          common.legend = FALSE) # Create common legend
+Corona_bar_graphs
+```
+
+The Sub-Saharan Africa has the highest average cases of death, new infections and people living with HIV. The Low-SDI countries follow in second highest for deaths and low-middle SDI for new infections and people living with HIV (Figure 3) 
+
+```{r echo=FALSE, include=FALSE}
+# Mean graphs for HIV
+
+HIV_graphs1 <- ggplot(data = HIV_sig, aes(x = Country, y = mean_deaths))+
+  geom_bar(stat =  "identity", aes(fill=mean_deaths))+
+  labs(x="Country", y="Mean deaths")
+ 
+HIV_graphs1
+
+HIV_graphs2 <- ggplot(data = HIV_sig, aes(x = Country, y = mean_new_infections))+
+  geom_bar(stat =  "identity", aes(fill=mean_new_infections))+
+  labs(x="Country", y="Mean new infections")
+
+HIV_graphs2
+
+
+HIV_graphs3 <- ggplot(data = HIV_sig, aes(x = Country, y = mean_Living_with_HIV))+
+  geom_bar(stat =  "identity", aes(fill=mean_Living_with_HIV))+
+  labs(x="Country", y="Mean new infections")
+HIV_graphs3
+```
+```{r r figs3 , echo=FALSE, fig.cap="Figure 3. A bar graph showcasing the Average deaths, new infections and people living in low Socially demographic status countries being affected by HIV"}
+HIV_graphs<- ggarrange(HIV_graphs1,HIV_graphs2,HIV_graphs3,
+          ncol = 2, nrow = 2, # Set number of rows and columns
+          labels = c("A", "B", "C"), # Label each figure
+          common.legend = FALSE) # Create common legend
+HIV_graphs
+```
+``` 
+
+```
+#**Discussion**
+
+
+It is not a surprise that Sub-Saharan Africa is currently being affected the most by HIV considering it's low Social Demographic Index (SDI) status. An SDI is a development benchmark used to measure the overall health of a country by considering the income,educational attainment and the fertility rate. This benchmark has been formulated by researchers in the hope of it helping to work out health development based on the factors that contribute to the  health of a country instead of it being based on the wealth of a country (Mckee et al.,2016).With that being said, it is expected that Sub-Saharan africa would be more prone to getting the COVID-19 virus, however it is only recently being affected as of March 2020, specifically in South Africa. This is worrisome as the spread to Africa could mean a "wild fire" especially if it is to spread to disadvantaged areas in South Africa. South Africa is known as the epicenter of the HIV/AIDS epidemic("Global HIV & AIDS statistics — 2019 fact sheet",2006). 
+
+
+The main reason for the spread of the virus so quickly was due to the high rate of travel at the end of the 2019 year,but because there are many travellers between China and South Africa many people seemed confused as to why the virus had not spread to Africa quicker. According to a (www.dw.com), 2020) article, one of the reasons could be because of the living situations of South Africans. South Africans tend to spend more time outside and live in generally spacious areas where the living arrangement are not crammed together. Whilst this has some truth to it, it unfortunately does not speak true for the many informal settlements situated in South Africa. 
+
+#**Conclusion**
+
+
+Based on the prices of international flights in South Africa, it is assumed that the first cases reported in South Africa are of people who are generally in a higher income class and live in relatively spacious households and suburban areas. As with the outbreak of HIV/AIDS it is quite concerning what would happen to the population once the virus spreads to the lower income class living in overcrowded apartments, shacks and dilapidated buildings. 
+
+
+#**References**
+
+
+Bean, A., Baker, M., Stewart, C., Cowled, C., Deffrasnes, C., Wang, L., & Lowenthal, J. (2013). Studying immunity to zoonotic diseases in the natural host — keeping it real. Nature Reviews Immunology, 13(12), 851-861. https://doi.org/10.1038/nri3551
+
+
+(www.dw.com), D. (2020). Africa has been spared so far from coronavirus. Why? | DW | 14.02.2020. DW.COM. Retrieved 11 March 2020, from https://www.dw.com/en/africa-has-been-spared-so-far-from-coronavirus-why/a-52382666..
+
+
+
+Global HIV & AIDS statistics — 2019 fact sheet. Unaids.org. (2006). Retrieved 11 March 2020, from https://www.unaids.org/en/resources/fact-sheet.
+
+
+McKee, S., McKee, S., Murphy, T., Leach-Kemon, K., & Leach-Kemon, K. (2016). A new way to measure progress in global health - Humanosphere. Humanosphere. Retrieved 11 March 2020, from http://www.humanosphere.org/global-health/2016/10/a-new-way-to-measure-progress-global-health/.
+
+
+Ren, L., Wang, Y., Wu, Z., Xiang, Z., Guo, L., & Xu, T. et al. (2020). Identification of a novel coronavirus causing severe pneumonia in human. Chinese Medical Journal, 1. https://doi.org/10.1097/cm9.0000000000000722
+
+if (FALSE){
+library(rmarkdown)
+render("input.Rmd", word_document())}
+
